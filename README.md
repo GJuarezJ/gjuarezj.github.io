@@ -20,8 +20,8 @@
   </style>
 </head>
 <body>
-  <h1> 🎁 Amigo Secreto — Familia Juárez</h1>
-  <p class="small">Abre este enlace desde WhatsApp en el teléfono. Escribe tu nombre (o selecciona del listado) y toca "Ver". No habrá correos ni registros.</p>
+  <h1>🎁Intercambio — Familia Juárez</h1>
+  <p class="small"></p>
 
   <label for="nameInput">Tu nombre</label>
   <input id="nameInput" list="namesList" placeholder="Escribe tu nombre exactamente (ej. Lupe)" autocomplete="off" />
@@ -37,11 +37,11 @@
 
   <div id="adminBox">
     <h3>Vista del organizador</h3>
-    <p class="small">Estás viendo la lista porque la URL incluye <code>?admin=familia-juarez</code>.</p>
+    <p class="small"><code>?admin=familia-juarez</code>.</p>
     <div style="display:flex; gap:8px; margin-bottom:8px;">
       <button id="regenBtn">Regenerar sorteo</button>
       <div style="flex:1;">
-        <label class="small">Seed actual (para reproducir este sorteo copiar en la URL):</label>
+        <label class="small"></label>
         <input id="seedInput" type="text" readonly />
       </div>
     </div>
@@ -49,16 +49,16 @@
       <thead><tr><th>Persona</th><th>Le toca regalar a</th></tr></thead>
       <tbody></tbody>
     </table>
-    <p class="small">Nota: si quieres fijar el sorteo, añade <code>?seed=EL_SEED</code> a la URL (por ejemplo <code>?admin=familia-juarez&seed=12345</code>).</p>
-    <p class="small danger">Advertencia: cualquier persona con acceso a la página puede ver el mapeo si inspecciona el código. Si necesitas privacidad total, hay que usar un servidor.</p>
+    <p class="small"></p>
+    <p class="small danger"></p>
   </div>
 
 <script>
 /* === Lista de participantes (19) === */
 const NAMES = [
-  "Lupe","Jorge Cora","Jorge Ángel","Tere","Sofi","Germán Grande","Germán Chico",
+  "Lupe","Joel","Abuelita","Jorge Cora","Jorge Ángel","Tere","Sofi","Germán Grande","Germán Chico",
   "Rosario","Fer","Sara","Víctor","Chary","Rubén","Karim","Kael","Neithan",
-  "Oscar","Abuelita","Joel"
+  "Oscar"
 ];
 
 /* Helpers: seeded RNG (Mulberry32) */
