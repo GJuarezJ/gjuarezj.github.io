@@ -20,7 +20,7 @@
   </style>
 </head>
 <body>
-  <h1>Amigo Secreto — Familia Juárez</h1>
+  <h1> 🎁 Amigo Secreto — Familia Juárez</h1>
   <p class="small">Abre este enlace desde WhatsApp en el teléfono. Escribe tu nombre (o selecciona del listado) y toca "Ver". No habrá correos ni registros.</p>
 
   <label for="nameInput">Tu nombre</label>
