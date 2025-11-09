@@ -1,24 +1,3 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>Amigo Secreto Familia Juárez</title>
-<style>
-    body { font-family: Arial, sans-serif; background: #faf5ef; padding: 40px; text-align: center; }
-    h1 { color: #d18b52; }
-    select, button { padding: 10px; margin-top: 15px; font-size: 16px; }
-    .card {
-        margin-top: 30px;
-        background: #fff;
-        padding: 25px;
-        border-radius: 12px;
-        display: inline-block;
-        border: 2px solid #d18b52;
-    }
-</style>
-</head>
-<body>
-
 <h1>🎁 Amigo Secreto - Familia Juárez</h1>
 <p>Selecciona tu nombre para ver a quién te toca regalar.</p>
 
@@ -27,37 +6,44 @@
 <button onclick="mostrarResultado()">Ver mi Amigo Secreto</button>
 
 <div id="resultado" class="card" style="display:none;"></div>
-<div id="adminPanel" style="margin-top:40px; display:none;"></div>
+<div id="adminPanel" style="display:none;"></div>
 
 <script>
-// Nombres de la familia:
+// Lista de participantes
 const nombres = [
-  "German",
-  "Joel",
-  "Victor",
-  "Mamá",
-  "Papá",
-  "Alejandra",
-  "Carmen"
+"Lupe","Jorge Cora","Jorge Ángel","Tere","Sofi","Germán Grande","Germán Chico",
+"Rosario","Fer","Sara","Víctor","Chary","Rubén","Karim","Kael","Neithan",
+"Oscar","Abuelita","Joel"
 ];
 
-// Sorteo fijo para que no cambie:
+// Sorteo fijo generado:
 const asignaciones = {
-  "German": "Carmen",
-  "Joel": "Papá",
-  "Victor": "German",
-  "Mamá": "Joel",
-  "Papá": "Alejandra",
-  "Alejandra": "Victor",
-  "Carmen": "Mamá"
+"Lupe": "Neithan",
+"Jorge Cora": "Rosario",
+"Jorge Ángel": "Sara",
+"Tere": "Karim",
+"Sofi": "Tere",
+"Germán Grande": "Joel",
+"Germán Chico": "Víctor",
+"Rosario": "Rubén",
+"Fer": "Germán Grande",
+"Sara": "Germán Chico",
+"Víctor": "Jorge Ángel",
+"Chary": "Kael",
+"Rubén": "Sofi",
+"Karim": "Abuelita",
+"Kael": "Jorge Cora",
+"Neithan": "Lupe",
+"Oscar": "Chary",
+"Abuelita": "Fer",
+"Joel": "Oscar"
 };
 
-// Llenar el dropdown
+// Llenar el selector
 const selector = document.getElementById("nombre");
 nombres.forEach(n => {
-  let opt = document.createElement("option");
-  opt.value = n;
-  opt.innerHTML = n;
+  const opt = document.createElement("option");
+  opt.value = opt.textContent = n;
   selector.appendChild(opt);
 });
 
@@ -65,18 +51,17 @@ function mostrarResultado() {
   const nombre = selector.value;
   const quien = asignaciones[nombre];
   document.getElementById("resultado").style.display = "block";
-  document.getElementById("resultado").innerHTML = `<h2>${nombre}</h2><p>Te toca regalar a:</p><h3>${quien}</h3>`;
+  document.getElementById("resultado").innerHTML =
+    `<h2>${nombre}</h2><p>Te toca regalar a:</p><h3>${quien}</h3>`;
 }
 
-// Panel admin
+// Panel del organizador:
 const params = new URLSearchParams(window.location.search);
 if (params.get("admin") === "familia-juarez") {
-  let adminHTML = "<h2>Panel del Organizador</h2><table style='margin:auto; text-align:left;'><tr><th>Persona</th><th>Regala a</th></tr>";
-  for (let p in asignaciones) {
-    adminHTML += `<tr><td>${p}</td><td>${asignaciones[p]}</td></tr>`;
-  }
-  adminHTML += "</table>";
-  document.getElementById("adminPanel").innerHTML = adminHTML;
+  let html = "<h2>Panel del Organizador</h2><table><tr><th>Persona</th><th>Regala a</th></tr>";
+  for (let p in asignaciones) html += `<tr><td>${p}</td><td>${asignaciones[p]}</td></tr>`;
+  html += "</table>";
+  document.getElementById("adminPanel").innerHTML = html;
   document.getElementById("adminPanel").style.display = "block";
 }
 </script>
