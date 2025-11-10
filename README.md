@@ -3,24 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🎁Intercambio — Familia Juárez</title>
+  <title>🎁 Intercambio — Familia Juárez</title>
   <style>
     body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; max-width:720px; margin:auto; padding:18px; }
     h1 { margin-top: 0; }
     label, p.note { display:block; margin-top:10px; }
-    input[type="text"], select, button { font-size:16px; padding:8px; width:100%; box-sizing:border-box; margin-top:6px; }
-    .row { display:flex; gap:8px; }
-    .col { flex:1; }
+    input[type="text"], button { font-size:16px; padding:10px; width:100%; box-sizing:border-box; margin-top:6px; }
     #result { font-size:20px; margin-top:18px; font-weight:600; }
     table { border-collapse:collapse; width:100%; margin-top:12px; }
-    td, th { border:1px solid #ccc; padding:6px 8px; text-align:left; }
+    td, th { border:1px solid #ccc; padding:8px; text-align:left; }
     #adminBox { display:none; background:#f8f8f8; padding:10px; border-radius:6px; margin-top:12px; }
     .small { font-size:13px; color:#555; }
     .danger { color:#a00; }
   </style>
 </head>
 <body>
-  <h1>🎁Intercambio — Familia Juárez</h1>
+  <h1>🎁 Intercambio — Familia Juárez</h1>
   <p class="small"></p>
 
   <label for="nameInput">Tu nombre</label>
@@ -37,80 +35,43 @@
 
   <div id="adminBox">
     <h3>Vista del organizador</h3>
-    <p class="small"><code>?admin=familia-juarez</code>.</p>
-    <div style="display:flex; gap:8px; margin-bottom:8px;">
-      <button id="regenBtn">Regenerar sorteo</button>
-      <div style="flex:1;">
-        <label class="small"></label>
-        <input id="seedInput" type="text" readonly />
-      </div>
-    </div>
+    <p class="small"></p>
     <table id="adminTable" aria-label="Tabla de asignaciones">
       <thead><tr><th>Persona</th><th>Le toca regalar a</th></tr></thead>
       <tbody></tbody>
     </table>
-    <p class="small"></p>
-    <p class="small danger"></p>
+    <p class="small danger">Nota: la asignación es fija — no se regenera.</p>
   </div>
 
 <script>
-/* === Lista de participantes (19) === */
-const NAMES = [
-  "Lupe","Joel","Abuelita","Jorge Cora","Jorge Ángel","Tere","Sofi","Germán Grande","Germán Chico",
-  "Rosario","Fer","Sara","Víctor","Chary","Rubén","Karim","Kael","Neithan",
-  "Oscar"
-];
+/* === Lista de participantes (19) y asignación fija (giver -> receiver) === */
+const MAPPING = {
+  "Lupe": "Oscar",
+  "Joel": "Jorge Ángel",
+  "Abuelita": "Chary",
+  "Jorge Cora": "Karim",
+  "Jorge Ángel": "Sara",
+  "Tere": "Germán Chico",
+  "Sofi": "Kael",
+  "Germán Grande": "Sofi",
+  "Germán Chico": "Víctor",
+  "Rosario": "Janet",
+  "Fer": "Neithan",
+  "Sara": "Rubén",
+  "Víctor": "Fer",
+  "Chary": "Abuelita",
+  "Rubén": "Joel",
+  "Karim": "Jorge Cora",
+  "Kael": "Germán Grande",
+  "Neithan": "Lupe",
+  "Oscar": "Tere",
+  "Janet": "Rosario"
+};
 
-/* Helpers: seeded RNG (Mulberry32) */
-function mulberry32(a) {
-  return function() {
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  }
-}
+/* Build canonical NAMES list from mapping keys for suggestions and validation */
+const NAMES = Object.keys(MAPPING).slice(); // array of giver names
 
-/* Shuffle with seed */
-function shuffleWithSeed(arr, seed) {
-  const a = arr.slice();
-  const rnd = mulberry32(seed >>> 0);
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-/* Generate valid mapping: no self-assign, and Joel & Víctor no mutual */
-function generateMapping(seed) {
-  // seed: integer
-  let attempts = 0;
-  let receivers;
-  do {
-    // derive a local seed variant to change shuffle each attempt predictably
-    receivers = shuffleWithSeed(NAMES, seed + attempts);
-    const mapping = {};
-    for (let i = 0; i < NAMES.length; i++) mapping[NAMES[i]] = receivers[i];
-    // validate
-    let ok = true;
-    for (const giver of NAMES) {
-      const rec = mapping[giver];
-      if (rec === giver) { ok = false; break; }
-      if ((giver === "Joel" && rec === "Víctor") || (giver === "Víctor" && rec === "Joel")) { ok = false; break; }
-    }
-    if (ok) return {mapping, seedUsed: seed + attempts};
-    attempts++;
-  } while (attempts < 2000);
-  throw new Error("No se pudo generar un mapeo válido (intenta otro seed).");
-}
-
-/* Utilities URL params */
-function getParam(name) {
-  return new URLSearchParams(location.search).get(name);
-}
-
-/* Populate datalist */
+/* Populate datalist for suggestions */
 const namesList = document.getElementById('namesList');
 for (const n of NAMES) {
   const opt = document.createElement('option');
@@ -118,90 +79,69 @@ for (const n of NAMES) {
   namesList.appendChild(opt);
 }
 
-/* Initial seed handling */
-let seedParam = getParam('seed');
-let seed;
-if (seedParam !== null) {
-  // try parseInt, fallback to hash of string
-  seed = parseInt(seedParam, 10);
-  if (Number.isNaN(seed)) {
-    // simple string-to-int hash
-    seed = 0;
-    for (let i = 0; i < seedParam.length; i++) seed = (seed * 31 + seedParam.charCodeAt(i)) >>> 0;
+/* Normalize helper: remove extra spaces and compare case-insensitive */
+function findCanonicalName(input) {
+  if (!input) return null;
+  const trimmed = input.trim();
+  // exact match
+  if (NAMES.includes(trimmed)) return trimmed;
+  // case-insensitive match
+  const lower = trimmed.toLowerCase();
+  const found = NAMES.find(n => n.toLowerCase() === lower);
+  if (found) return found;
+  // try removing diacritics for match (basic)
+  function removeDiacritics(s) {
+    return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
-} else {
-  // random seed based on time (but reproducible per page load)
-  seed = Math.floor(Math.random() * 0x7fffffff);
+  const noDiacritics = removeDiacritics(trimmed).toLowerCase();
+  return NAMES.find(n => removeDiacritics(n).toLowerCase() === noDiacritics) || null;
 }
 
-/* Generate initial mapping */
-let current = generateMapping(seed);
-let MAPPING = current.mapping;
-document.getElementById('seedInput') && (document.getElementById('seedInput').value = String(current.seedUsed));
+/* Show result on button click */
+document.getElementById('viewBtn').addEventListener('click', () => {
+  const input = document.getElementById('nameInput').value;
+  const result = document.getElementById('result');
+  result.textContent = '';
+  if (!input || input.trim() === '') {
+    result.textContent = "Por favor escribe tu nombre.";
+    return;
+  }
+  const name = findCanonicalName(input);
+  if (!name) {
+    result.textContent = "Nombre no reconocido. Revisa que esté escrito exactamente como en la lista.";
+    return;
+  }
+  // show the assigned receiver
+  const receiver = MAPPING[name];
+  result.textContent = `Te toca regalar a: ${receiver}`;
+});
 
-/* Show admin if ?admin=familia-juarez */
+/* Admin display if ?admin=familia-juarez */
+function getParam(name) {
+  return new URLSearchParams(location.search).get(name);
+}
 if (getParam('admin') === 'familia-juarez') {
   document.getElementById('adminBox').style.display = 'block';
   renderAdminTable();
 }
-
-/* Render admin table */
 function renderAdminTable() {
   const tbody = document.querySelector('#adminTable tbody');
   tbody.innerHTML = '';
   for (const giver of NAMES) {
     const tr = document.createElement('tr');
     const td1 = document.createElement('td'); td1.textContent = giver;
-    const td2 = document.createElement('td'); td2.textContent = MAPPING[giver];
+    const td2 = document.createElement('td'); td2.textContent = MAPPING[giver] || '';
     tr.appendChild(td1); tr.appendChild(td2);
     tbody.appendChild(tr);
   }
-  // update seed display (if admin)
-  const seedInput = document.getElementById('seedInput');
-  if (seedInput) seedInput.value = String(current.seedUsed);
 }
 
-/* Button handlers */
-document.getElementById('viewBtn').addEventListener('click', () => {
-  const name = document.getElementById('nameInput').value.trim();
-  const result = document.getElementById('result');
-  if (!name) { result.textContent = "Por favor escribe tu nombre."; return; }
-  // find exact match ignoring diacritics? We'll require exact match from list.
-  if (!NAMES.includes(name)) {
-    // try case-insensitive match
-    const lower = NAMES.find(n => n.toLowerCase() === name.toLowerCase());
-    if (lower) {
-      // use normalized found name
-      const receiver = MAPPING[lower];
-      result.textContent = `Te toca regalar a: ${receiver}`;
-      return;
-    }
-    result.textContent = "Nombre no reconocido. Revisa que esté escrito exactamente como en la lista.";
-    return;
+/* Accessibility: allow Enter key in input to trigger view */
+document.getElementById('nameInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    document.getElementById('viewBtn').click();
   }
-  const receiver = MAPPING[name];
-  result.textContent = `Te toca regalar a: ${receiver}`;
-});
-
-/* Regenerar sorteo (solo admin) */
-const regenBtn = document.getElementById('regenBtn');
-if (regenBtn) {
-  regenBtn.addEventListener('click', () => {
-    // generate a new random seed and mapping
-    const newSeed = Math.floor(Math.random() * 0x7fffffff);
-    current = generateMapping(newSeed);
-    MAPPING = current.mapping;
-    renderAdminTable();
-    // show a small alert para que el organizador copie el seed si quiere fijarlo
-    alert('Sorteo regenerado. Seed: ' + current.seedUsed + '\nCopia ese número y pégalo en la URL como ?admin=familia-juarez&seed=' + current.seedUsed + ' para fijarlo.');
-  });
-}
-
-/* On page load, if seed was provided but mapping differs, update seedInput */
-document.addEventListener('DOMContentLoaded', () => {
-  // ensure seed input shows actual seedUsed
-  const seedInput = document.getElementById('seedInput');
-  if (seedInput) seedInput.value = String(current.seedUsed);
 });
 </script>
 </body>
