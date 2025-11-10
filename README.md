@@ -3,185 +3,114 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🎁Intercambio — Familia Juárez</title>
+  <title>🎁 Intercambio — Familia Juárez (Cerrado)</title>
   <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; max-width:720px; margin:auto; padding:18px; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; max-width:720px; margin:auto; padding:18px; }
     h1 { margin-top: 0; }
-    label, p.note { display:block; margin-top:10px; }
-    input[type="text"], button { font-size:16px; padding:10px; width:100%; box-sizing:border-box; margin-top:6px; }
-    #result { font-size:20px; margin-top:18px; font-weight:600; }
+    .center { text-align:center; }
+    .note { color:#555; font-size:14px; }
     table { border-collapse:collapse; width:100%; margin-top:12px; }
-    td, th { border:1px solid #ccc; padding:6px 8px; text-align:left; }
-    #adminBox { display:none; background:#f8f8f8; padding:10px; border-radius:6px; margin-top:12px; }
-    .small { font-size:13px; color:#555; }
-    .danger { color:#a00; }
+    td, th { border:1px solid #ccc; padding:8px; text-align:left; }
+    #adminBox { display:none; background:#fafafa; padding:12px; border-radius:8px; margin-top:12px; }
+    .danger { color:#a00; font-weight:600; }
+    input, button { font-size:16px; padding:8px; width:100%; box-sizing:border-box; }
   </style>
 </head>
 <body>
-  <h1>🎁Intercambio — Familia Juárez</h1>
-  <p class="small"></p>
+  <h1>🎁 Intercambio — Familia Juárez</h1>
 
-  <label for="nameInput">Escribe tu nombre exactamente (ej. Lupe)</label>
-  <input id="nameInput" list="namesList" placeholder="Escribe tu nombre aquí" autocomplete="off" />
-  <datalist id="namesList"></datalist>
-
-  <div style="margin-top:8px;">
-    <button id="viewBtn">Ver a quién le regalas</button>
+  <!-- Mensaje público: la página está cerrada -->
+  <div id="publicView">
+    <p class="note">El intercambio ya fue cerrado. Para evitar confusiones la vista pública fue deshabilitada; sólo el organizador puede ver la lista completa usando su enlace privado.</p>
+    <p class="center"><strong class="danger">Página cerrada al público</strong></p>
   </div>
 
-  <p id="result" aria-live="polite"></p>
+  <!-- Vista del organizador (se mostrará sólo si la URL tiene ?admin=familia-juarez&seed=123456 ) -->
+  <div id="adminBox" aria-hidden="true">
+    <h2>Vista del organizador</h2>
+    <p class="note">Estás viendo la tabla porque entraste con la clave de organizador correcta en la URL.</p>
+    <p class="note">Seed: <code id="seedDisplay"></code></p>
 
-  <hr/>
-
-  <div id="adminBox" role="region" aria-label="Vista del organizador">
-    <h3>Vista del organizador</h3>
-    <p class="small">.</p>
     <table id="adminTable" aria-label="Tabla de asignaciones">
-      <thead><tr><th>Persona</th><th>Le toca regalar a</th></tr></thead>
+      <thead>
+        <tr><th>Persona (da)</th><th>Le toca regalar a</th></tr>
+      </thead>
       <tbody></tbody>
     </table>
+
+    <p class="note" style="margin-top:10px">Si quieres cambiar la seed o el token, edita este archivo y actualiza la constante <code>ADMIN_SEED</code> o <code>ADMIN_TOKEN</code>.</p>
   </div>
 
 <script>
-/* ===== Participantes (20) ===== */
+/* -------------------- CONFIGURACIÓN FIJA -------------------- */
+/* Lista de participantes (orden mostrado en selección) */
 const NAMES = [
   "Lupe","Joel","Abuelita","Jorge Cora","Jorge Ángel","Janet","Tere","Sofi",
-  "Germán Grande","Germán Chico","Rosario","Fer","Sara","Víctor","Chary",
-  "Rubén","Karim","Kael","Neithan","Oscar"
+  "Germán Grande","Germán Chico","Rosario","Fer","Sara","Víctor","Chary","Rubén",
+  "Karim","Kael","Neithan","Oscar"
 ];
 
-/* ===== Asignación fija proporcionada =====
-Lupe -> Oscar
-Joel -> Jorge Ángel
-Abuelita -> Chary
-Jorge Cora -> Karim
-Jorge Ángel -> Sara
-Tere -> Germán Chico
-Sofi -> Kael
-Germán Grande -> Sofi
-Germán Chico -> Víctor
-Rosario -> Janet
-Fer -> Neithan
-Sara -> Rubén
-Víctor -> Fer
-Chary -> Abuelita
-Rubén -> Joel
-Karim -> Jorge Cora
-Kael -> Germán Grande
-Neithan -> Lupe
-Oscar -> Tere
-Janet -> Rosario
-*/
+/* Mapping fijado (según tu lista): quien da -> a quién le toca */
 const FIXED_MAPPING = {
-  "Lupe":"Oscar",
-  "Joel":"Jorge Ángel",
-  "Abuelita":"Chary",
-  "Jorge Cora":"Karim",
-  "Jorge Ángel":"Sara",
-  "Tere":"Germán Chico",
-  "Sofi":"Kael",
-  "Germán Grande":"Sofi",
-  "Germán Chico":"Víctor",
-  "Rosario":"Janet",
-  "Fer":"Neithan",
-  "Sara":"Rubén",
-  "Víctor":"Fer",
-  "Chary":"Abuelita",
-  "Rubén":"Joel",
-  "Karim":"Jorge Cora",
-  "Kael":"Germán Grande",
-  "Neithan":"Lupe",
-  "Oscar":"Tere",
-  "Janet":"Rosario"
+  "Lupe": "Oscar",
+  "Joel": "Jorge Ángel",
+  "Abuelita": "Chary",
+  "Jorge Cora": "Karim",
+  "Jorge Ángel": "Sara",
+  "Janet": "Rosario",
+  "Tere": "Germán Chico",
+  "Sofi": "Kael",
+  "Germán Grande": "Sofi",
+  "Germán Chico": "Víctor",
+  "Rosario": "Janet",
+  "Fer": "Neithan",
+  "Sara": "Rubén",
+  "Víctor": "Fer",
+  "Chary": "Abuelita",
+  "Rubén": "Joel",
+  "Karim": "Jorge Cora",
+  "Kael": "Germán Grande",
+  "Neithan": "Lupe",
+  "Oscar": "Tere"
 };
 
-/* Helpers para URL params */
+/* Parámetros de seguridad / acceso del administrador */
+const ADMIN_TOKEN = 'familia-juarez';   // token que debe venir en ?admin=
+const ADMIN_SEED = '123456';            // seed que exige la URL ?seed=123456
+
+/* -------------------- LÓGICA DE PÁGINA -------------------- */
 function getParam(name) {
-  return new URLSearchParams(location.search).get(name);
+  return new URLSearchParams(window.location.search).get(name);
 }
 
-/* Normalización (quita tildes y compara en minúsculas) */
-function normalize(s) {
-  return s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim() : '';
-}
+const adminParam = getParam('admin');
+const seedParam = getParam('seed');
 
-/* Rellena datalist */
-const namesList = document.getElementById('namesList');
-NAMES.forEach(n => {
-  const opt = document.createElement('option');
-  opt.value = n;
-  namesList.appendChild(opt);
-});
+// Mostrar admin sólo si BOTH son correctos
+const isAdmin = (adminParam === ADMIN_TOKEN && seedParam === ADMIN_SEED);
 
-/* Seed handling: por compatibilidad, usamos 123456 por defecto si no hay seed.
-   El mapping es fijo, el seed solo sirve para el enlace que quieres compartir. */
-const DEFAULT_SEED = '123456';
-const seedParam = getParam('seed') || DEFAULT_SEED;
-
-/* Mostrar mensaje si usan otro seed (opcional) - no bloqueante */
-if (seedParam !== DEFAULT_SEED) {
-  // no bloquear; solo deja una nota en consola para el organizador
-  console.info('Seed usado:', seedParam, '(recomendado: ' + DEFAULT_SEED + ')');
-}
-
-/* Funcion para buscar nombre ingresado en la lista (ignora tildes y mayúsculas) */
-function findNameInputMatch(input) {
-  const normInput = normalize(input);
-  if (!normInput) return null;
-  // buscar coincidencia exacta normalizada
-  for (const n of NAMES) {
-    if (normalize(n) === normInput) return n;
-  }
-  // permitir coincidencias por inicio si quiere (opcional)
-  return null;
-}
-
-/* Botón ver */
-document.getElementById('viewBtn').addEventListener('click', () => {
-  const raw = document.getElementById('nameInput').value || '';
-  const result = document.getElementById('result');
-  const matched = findNameInputMatch(raw);
-  if (!raw.trim()) {
-    result.textContent = 'Por favor escribe tu nombre.';
-    return;
-  }
-  if (!matched) {
-    // sugerencia de nombres parecidos (búsqueda simple)
-    const lower = raw.toLowerCase();
-    const suggestions = NAMES.filter(n => n.toLowerCase().includes(lower)).slice(0,5);
-    if (suggestions.length) {
-      result.innerHTML = 'Nombre no reconocido. ¿Quizás te refieres a: <strong>' + suggestions.join('</strong>, <strong>') + '</strong>?';
-    } else {
-      result.textContent = 'Nombre no reconocido. Revisa que esté escrito exactamente como en la lista.';
-    }
-    return;
-  }
-  const receiver = FIXED_MAPPING[matched];
-  if (!receiver) {
-    result.textContent = 'No se encontró asignación para ese nombre. Contacta al organizador.';
-    return;
-  }
-  result.textContent = `Te toca regalar a: ${receiver}`;
-});
-
-/* Vista del organizador: ?admin=familia-juarez&seed=123456 */
-if (getParam('admin') === 'familia-juarez' && seedParam === DEFAULT_SEED) {
+if (isAdmin) {
+  document.getElementById('publicView').style.display = 'none';
   const adminBox = document.getElementById('adminBox');
   adminBox.style.display = 'block';
+  adminBox.setAttribute('aria-hidden', 'false');
+  // llenar tabla
   const tbody = document.querySelector('#adminTable tbody');
   tbody.innerHTML = '';
-  NAMES.forEach(giver => {
+  for (const giver of NAMES) {
     const tr = document.createElement('tr');
     const td1 = document.createElement('td'); td1.textContent = giver;
-    const td2 = document.createElement('td'); td2.textContent = FIXED_MAPPING[giver] || '';
+    const td2 = document.createElement('td'); td2.textContent = FIXED_MAPPING[giver] || '(sin asignar)';
     tr.appendChild(td1); tr.appendChild(td2);
     tbody.appendChild(tr);
-  });
+  }
+  document.getElementById('seedDisplay').textContent = seedParam;
 } else {
-  // si intenta acceder admin sin seed correcto, ocultar admin (ya está oculto por defecto)
-  // No mostramos mensajes intrusivos para los usuarios normales.
+  // no es admin: mostrar mensaje de cerrado (default)
+  document.getElementById('adminBox').style.display = 'none';
 }
 </script>
 </body>
 </html>
+
 
