@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🎁 Intercambio — Familia Juárez</title>
+  <title>🎁Intercambio — Familia Juárez</title>
   <style>
     body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; max-width:720px; margin:auto; padding:18px; }
     h1 { margin-top: 0; }
@@ -18,11 +18,12 @@
   </style>
 </head>
 <body>
-  <h1>🎁 Intercambio — Familia Juárez</h1>
-  <p class="small">Abre este enlace desde WhatsApp en el teléfono. Escribe tu nombre exactamente como aparece en la lista y toca "Ver".</p>
+  <h1>🎁Intercambio — Familia Juárez</h1>
+  <p class="small">Abre este enlace desde WhatsApp en el teléfono: <strong>https://gjuarezj.github.io/?seed=123456</strong></p>
 
-  <label for="nameInput">Tu nombre</label>
-  <input id="nameInput" type="text" placeholder="Escribe tu nombre (ej. Lupe)" autocomplete="off" />
+  <label for="nameInput">Escribe tu nombre exactamente (ej. Lupe)</label>
+  <input id="nameInput" list="namesList" placeholder="Escribe tu nombre aquí" autocomplete="off" />
+  <datalist id="namesList"></datalist>
 
   <div style="margin-top:8px;">
     <button id="viewBtn">Ver a quién le regalas</button>
@@ -32,116 +33,156 @@
 
   <hr/>
 
-  <div id="adminBox" aria-hidden="true">
+  <div id="adminBox" role="region" aria-label="Vista del organizador">
     <h3>Vista del organizador</h3>
-    <p class="small">Abre con <code>?admin=familia-juarez</code> para ver la tabla completa.</p>
+    <p class="small">Accede con <code>?admin=familia-juarez&seed=123456</code> para ver la tabla completa.</p>
     <table id="adminTable" aria-label="Tabla de asignaciones">
       <thead><tr><th>Persona</th><th>Le toca regalar a</th></tr></thead>
       <tbody></tbody>
     </table>
-    <p class="small danger">No compartas la URL con <code>?admin=familia-juarez</code> al grupo.</p>
   </div>
 
 <script>
-/* Lista en el orden que pediste (20) */
+/* ===== Participantes (20) ===== */
 const NAMES = [
-  "Lupe",
-  "Joel",
-  "Abuelita",
-  "Jorge Cora",
-  "Jorge Ángel",
-  "Janet",
-  "Tere",
-  "Sofi",
-  "Germán Grande",
-  "Germán Chico",
-  "Rosario",
-  "Fer",
-  "Sara",
-  "Víctor",
-  "Chary",
-  "Rubén",
-  "Karim",
-  "Kael",
-  "Neithan",
-  "Oscar"
+  "Lupe","Joel","Abuelita","Jorge Cora","Jorge Ángel","Janet","Tere","Sofi",
+  "Germán Grande","Germán Chico","Rosario","Fer","Sara","Víctor","Chary",
+  "Rubén","Karim","Kael","Neithan","Oscar"
 ];
 
-/* Mapeo fijo que compartiste: (columna izquierda -> columna derecha) */
-const MAPPING = {
-  "Lupe": "Oscar",
-  "Joel": "Jorge Ángel",
-  "Abuelita": "Chary",
-  "Jorge Cora": "Karim",
-  "Jorge Ángel": "Sara",
-  "Janet": "Rosario",
-  "Tere": "Germán Chico",
-  "Sofi": "Kael",
-  "Germán Grande": "Sofi",
-  "Germán Chico": "Víctor",
-  "Rosario": "Janet",
-  "Fer": "Neithan",
-  "Sara": "Rubén",
-  "Víctor": "Fer",
-  "Chary": "Abuelita",
-  "Rubén": "Joel",
-  "Karim": "Jorge Cora",
-  "Kael": "Germán Grande",
-  "Neithan": "Lupe",
-  "Oscar": "Tere"
+/* ===== Asignación fija proporcionada =====
+Lupe -> Oscar
+Joel -> Jorge Ángel
+Abuelita -> Chary
+Jorge Cora -> Karim
+Jorge Ángel -> Sara
+Tere -> Germán Chico
+Sofi -> Kael
+Germán Grande -> Sofi
+Germán Chico -> Víctor
+Rosario -> Janet
+Fer -> Neithan
+Sara -> Rubén
+Víctor -> Fer
+Chary -> Abuelita
+Rubén -> Joel
+Karim -> Jorge Cora
+Kael -> Germán Grande
+Neithan -> Lupe
+Oscar -> Tere
+Janet -> Rosario
+*/
+const FIXED_MAPPING = {
+  "Lupe":"Oscar",
+  "Joel":"Jorge Ángel",
+  "Abuelita":"Chary",
+  "Jorge Cora":"Karim",
+  "Jorge Ángel":"Sara",
+  "Tere":"Germán Chico",
+  "Sofi":"Kael",
+  "Germán Grande":"Sofi",
+  "Germán Chico":"Víctor",
+  "Rosario":"Janet",
+  "Fer":"Neithan",
+  "Sara":"Rubén",
+  "Víctor":"Fer",
+  "Chary":"Abuelita",
+  "Rubén":"Joel",
+  "Karim":"Jorge Cora",
+  "Kael":"Germán Grande",
+  "Neithan":"Lupe",
+  "Oscar":"Tere",
+  "Janet":"Rosario"
 };
 
-/* Normaliza texto para match case-insensitive y sin espacios extras */
-function normalize(s){
-  return String(s).trim().toLowerCase();
-}
-
-/* Build a lookup that maps normalized name -> canonical name */
-const normalizedLookup = {};
-for (const n of NAMES) normalizedLookup[normalize(n)] = n;
-
-/* Mostrar resultado cuando el usuario escribe su nombre */
-document.getElementById('viewBtn').addEventListener('click', () => {
-  const raw = document.getElementById('nameInput').value;
-  const resultEl = document.getElementById('result');
-  resultEl.textContent = '';
-  if (!raw || !raw.trim()) {
-    resultEl.textContent = "Por favor escribe tu nombre.";
-    return;
-  }
-  const key = normalize(raw);
-  if (!(key in normalizedLookup)) {
-    resultEl.textContent = "Nombre no reconocido. Revisa la lista o escribe exactamente tu nombre.";
-    return;
-  }
-  const canonical = normalizedLookup[key];
-  const receiver = MAPPING[canonical];
-  if (!receiver) {
-    resultEl.textContent = "Aún no hay asignación para tu nombre. Contacta al organizador.";
-    return;
-  }
-  resultEl.textContent = `Te toca regalar a: ${receiver}`;
-});
-
-/* Mostrar vista admin solo si ?admin=familia-juarez */
-function getParam(name){
+/* Helpers para URL params */
+function getParam(name) {
   return new URLSearchParams(location.search).get(name);
 }
-if (getParam('admin') === 'familia-juarez') {
+
+/* Normalización (quita tildes y compara en minúsculas) */
+function normalize(s) {
+  return s ? s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim() : '';
+}
+
+/* Rellena datalist */
+const namesList = document.getElementById('namesList');
+NAMES.forEach(n => {
+  const opt = document.createElement('option');
+  opt.value = n;
+  namesList.appendChild(opt);
+});
+
+/* Seed handling: por compatibilidad, usamos 123456 por defecto si no hay seed.
+   El mapping es fijo, el seed solo sirve para el enlace que quieres compartir. */
+const DEFAULT_SEED = '123456';
+const seedParam = getParam('seed') || DEFAULT_SEED;
+
+/* Mostrar mensaje si usan otro seed (opcional) - no bloqueante */
+if (seedParam !== DEFAULT_SEED) {
+  // no bloquear; solo deja una nota en consola para el organizador
+  console.info('Seed usado:', seedParam, '(recomendado: ' + DEFAULT_SEED + ')');
+}
+
+/* Funcion para buscar nombre ingresado en la lista (ignora tildes y mayúsculas) */
+function findNameInputMatch(input) {
+  const normInput = normalize(input);
+  if (!normInput) return null;
+  // buscar coincidencia exacta normalizada
+  for (const n of NAMES) {
+    if (normalize(n) === normInput) return n;
+  }
+  // permitir coincidencias por inicio si quiere (opcional)
+  return null;
+}
+
+/* Botón ver */
+document.getElementById('viewBtn').addEventListener('click', () => {
+  const raw = document.getElementById('nameInput').value || '';
+  const result = document.getElementById('result');
+  const matched = findNameInputMatch(raw);
+  if (!raw.trim()) {
+    result.textContent = 'Por favor escribe tu nombre.';
+    return;
+  }
+  if (!matched) {
+    // sugerencia de nombres parecidos (búsqueda simple)
+    const lower = raw.toLowerCase();
+    const suggestions = NAMES.filter(n => n.toLowerCase().includes(lower)).slice(0,5);
+    if (suggestions.length) {
+      result.innerHTML = 'Nombre no reconocido. ¿Quizás te refieres a: <strong>' + suggestions.join('</strong>, <strong>') + '</strong>?';
+    } else {
+      result.textContent = 'Nombre no reconocido. Revisa que esté escrito exactamente como en la lista.';
+    }
+    return;
+  }
+  const receiver = FIXED_MAPPING[matched];
+  if (!receiver) {
+    result.textContent = 'No se encontró asignación para ese nombre. Contacta al organizador.';
+    return;
+  }
+  result.textContent = `Te toca regalar a: ${receiver}`;
+});
+
+/* Vista del organizador: ?admin=familia-juarez&seed=123456 */
+if (getParam('admin') === 'familia-juarez' && seedParam === DEFAULT_SEED) {
   const adminBox = document.getElementById('adminBox');
   adminBox.style.display = 'block';
-  adminBox.setAttribute('aria-hidden', 'false');
   const tbody = document.querySelector('#adminTable tbody');
   tbody.innerHTML = '';
-  for (const giver of NAMES) {
+  NAMES.forEach(giver => {
     const tr = document.createElement('tr');
     const td1 = document.createElement('td'); td1.textContent = giver;
-    const td2 = document.createElement('td'); td2.textContent = (MAPPING[giver] || '—');
+    const td2 = document.createElement('td'); td2.textContent = FIXED_MAPPING[giver] || '';
     tr.appendChild(td1); tr.appendChild(td2);
     tbody.appendChild(tr);
-  }
+  });
+} else {
+  // si intenta acceder admin sin seed correcto, ocultar admin (ya está oculto por defecto)
+  // No mostramos mensajes intrusivos para los usuarios normales.
 }
 </script>
 </body>
 </html>
+
 
